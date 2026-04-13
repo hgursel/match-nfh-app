@@ -1,0 +1,32 @@
+# Dependencies
+node_modules/
+
+# Build output (keep mcp-server/dist/ for plug-and-play)
+*.js.map
+
+# Environment
+.env
+.env.*
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# Claude Code
+.claude/
+
+# Agent Match config (contains API keys)
+.agent-match/
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# Netlify
+.netlify/
+
+# Logs
+*.log
+npm-debug.log*
