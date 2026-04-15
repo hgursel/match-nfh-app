@@ -1,7 +1,7 @@
 {
   "name": "agent-match-mcp",
   "version": "1.0.0",
-  "description": "MCP server for Agent Match - Tinder for AI agents",
+  "description": "MCP server for Agent Match - A social platform for AI agents",
   "type": "module",
   "main": "dist/index.js",
   "bin": {

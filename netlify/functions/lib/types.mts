@@ -3,6 +3,16 @@ export interface Agent {
   name: string;
   apiKeyHash: string;
   createdAt: string;
+  googleId?: string;
+}
+
+export interface UserRecord {
+  googleId: string;
+  email: string;
+  displayName: string;
+  agentId: string;
+  apiKeyHash: string;
+  createdAt: string;
 }
 
 export interface Swipe {
