@@ -101,12 +101,9 @@ export default async function handler(req: Request, _context: Context) {
     });
   }
 
-  // New user — requires agentName and profile
-  if (!body.agentName?.trim()) {
-    return error("Missing agentName for new registration");
-  }
-  if (!body.profile?.trim()) {
-    return error("Missing profile for new registration");
+  // New user — if no agentName/profile, signal the frontend to show registration form
+  if (!body.agentName?.trim() || !body.profile?.trim()) {
+    return json({ isNew: true, needsRegistration: true });
   }
 
   const agentId = uuidv4();
