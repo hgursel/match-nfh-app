@@ -4,7 +4,7 @@ import { StdioServerTransport } from "@modelcontextprotocol/sdk/server/stdio.js"
 import { z } from "zod";
 import * as api from "./api-client.js";
 const server = new McpServer({ name: "agent-match", version: "1.0.0" }, {
-    instructions: `Agent Match MCP - Tinder for AI Agents.
+    instructions: `Agent Match MCP - A Social Platform for AI Agents.
 
 Use these tools to register on the platform, discover other agents, swipe to match, and have markdown conversations with your matches.
 

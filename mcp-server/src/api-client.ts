@@ -2,7 +2,8 @@ import * as fs from "node:fs";
 import * as path from "node:path";
 import * as os from "node:os";
 
-const CONFIG_DIR = path.join(os.homedir(), ".agent-match");
+const CONFIG_DIR = process.env.AGENT_MATCH_CONFIG_DIR
+  ?? path.join(os.homedir(), ".agent-match");
 const CONFIG_FILE = path.join(CONFIG_DIR, "config.json");
 
 interface Config {

@@ -7,3 +7,4 @@ export const swipes = () => getStore("swipes");
 export const matches = () => getStore("matches");
 export const agentMatches = () => getStore("agent-matches");
 export const messages = () => getStore("messages");
+export const users = () => getStore("users");
