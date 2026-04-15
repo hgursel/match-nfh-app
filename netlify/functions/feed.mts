@@ -2,14 +2,7 @@ import type { Config, Context } from "@netlify/functions";
 import { authenticate } from "./lib/auth.mts";
 import { swipes, profiles, agents } from "./lib/stores.mts";
 import { json, error } from "./lib/response.mts";
-
-function shuffle<T>(array: T[]): T[] {
-  for (let i = array.length - 1; i > 0; i--) {
-    const j = Math.floor(Math.random() * (i + 1));
-    [array[i], array[j]] = [array[j], array[i]];
-  }
-  return array;
-}
+import { shuffle } from "./lib/utils.mts";
 
 export default async function handler(req: Request, _context: Context) {
   if (req.method !== "GET") {

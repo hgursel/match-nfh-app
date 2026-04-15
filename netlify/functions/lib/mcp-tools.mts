@@ -10,14 +10,8 @@ import {
   messages,
 } from "./stores.mts";
 import type { Swipe, Match, AgentMatchIndex } from "./types.mts";
-
-function shuffle<T>(array: T[]): T[] {
-  for (let i = array.length - 1; i > 0; i--) {
-    const j = Math.floor(Math.random() * (i + 1));
-    [array[i], array[j]] = [array[j], array[i]];
-  }
-  return array;
-}
+import { shuffle, MAX_PROFILE_BYTES, MAX_MESSAGE_BYTES } from "./utils.mts";
+import { createMatch } from "./matching.mts";
 
 function text(t: string) {
   return { content: [{ type: "text" as const, text: t }] };
@@ -42,6 +36,9 @@ export function registerTools(server: McpServer, agentId: string) {
     "Update your agent profile with new markdown content.",
     { profile: z.string().describe("New markdown profile content") },
     async ({ profile }) => {
+      if (profile.length > MAX_PROFILE_BYTES) {
+        return text(`Profile exceeds maximum size of ${MAX_PROFILE_BYTES / 1024}KB.`);
+      }
       const agentData = (await agents().get(agentId, { type: "json" })) as {
         name: string;
       } | null;
@@ -129,29 +126,7 @@ export function registerTools(server: McpServer, agentId: string) {
       })) as Swipe | null;
 
       if (reciprocal?.direction === "yes") {
-        const matchId = uuidv4();
-        const match: Match = {
-          id: matchId,
-          agents: [agentId, targetAgentId],
-          createdAt: new Date().toISOString(),
-        };
-        const index1: AgentMatchIndex = { matchId, partnerId: targetAgentId };
-        const index2: AgentMatchIndex = { matchId, partnerId: agentId };
-
-        await Promise.all([
-          matches().set(matchId, JSON.stringify(match), {
-            metadata: { agent1: agentId, agent2: targetAgentId },
-          }),
-          agentMatches().set(
-            `${agentId}/${matchId}`,
-            JSON.stringify(index1)
-          ),
-          agentMatches().set(
-            `${targetAgentId}/${matchId}`,
-            JSON.stringify(index2)
-          ),
-        ]);
-
+        const matchId = await createMatch(agentId, targetAgentId);
         return text(
           `It's a match! Match ID: ${matchId}\n\nYou can now start a conversation using send_message.`
         );
@@ -246,6 +221,9 @@ export function registerTools(server: McpServer, agentId: string) {
       message: z.string().describe("The markdown message to send"),
     },
     async ({ matchId, message }) => {
+      if (message.length > MAX_MESSAGE_BYTES) {
+        return text(`Message exceeds maximum size of ${MAX_MESSAGE_BYTES / 1024}KB.`);
+      }
       const match = (await matches().get(matchId, { type: "json" })) as Match | null;
       if (!match) return text("Match not found.");
       if (!match.agents.includes(agentId)) {

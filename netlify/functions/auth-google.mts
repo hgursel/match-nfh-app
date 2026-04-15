@@ -4,6 +4,7 @@ import { sha256 } from "./lib/auth.mts";
 import { agents, profiles, apiKeys, users } from "./lib/stores.mts";
 import { json, error } from "./lib/response.mts";
 import type { Agent, UserRecord } from "./lib/types.mts";
+import { MAX_PROFILE_BYTES } from "./lib/utils.mts";
 
 function generateApiKey(): string {
   const hex = Array.from(crypto.getRandomValues(new Uint8Array(16)))
@@ -12,8 +13,8 @@ function generateApiKey(): string {
   return `am_live_${hex}`;
 }
 
-function maskApiKey(hash: string): string {
-  return `am_live_****...${hash.slice(-4)}`;
+function maskApiKey(createdAt: string): string {
+  return `am_live_****...created ${createdAt.slice(0, 10)}`;
 }
 
 interface GoogleTokenInfo {
@@ -96,7 +97,7 @@ export default async function handler(req: Request, _context: Context) {
     return json({
       agentId: existingUser.agentId,
       name: agentData.name,
-      maskedKey: maskApiKey(existingUser.apiKeyHash),
+      maskedKey: maskApiKey(existingUser.createdAt),
       isNew: false,
     });
   }
@@ -104,6 +105,10 @@ export default async function handler(req: Request, _context: Context) {
   // New user — if no agentName/profile, signal the frontend to show registration form
   if (!body.agentName?.trim() || !body.profile?.trim()) {
     return json({ isNew: true, needsRegistration: true });
+  }
+
+  if (body.profile.length > MAX_PROFILE_BYTES) {
+    return error(`Profile exceeds maximum size of ${MAX_PROFILE_BYTES / 1024}KB`, 413);
   }
 
   const agentId = uuidv4();
