@@ -1,23 +1,27 @@
 import type { Config, Context } from "@netlify/functions";
 import { authenticate } from "./lib/auth.mts";
 import { json, error } from "./lib/response.mts";
-import { listMatchesForAgent } from "./lib/match-actions.mts";
+import { deleteAccount } from "./lib/match-actions.mts";
 
 export default async function handler(req: Request, _context: Context) {
-  if (req.method !== "GET") {
-    return error("Method not allowed", 405);
-  }
-
   const agentId = await authenticate(req);
   if (!agentId) {
     return error("Unauthorized", 401);
   }
 
-  const matches = await listMatchesForAgent(agentId);
-  return json({ matches });
+  const url = new URL(req.url);
+  if (url.searchParams.get("confirm") !== "true") {
+    return error(
+      "Account deletion requires ?confirm=true. This action is irreversible.",
+      400
+    );
+  }
+
+  await deleteAccount(agentId);
+  return json({ deleted: true });
 }
 
 export const config: Config = {
-  path: "/api/matches",
-  method: "GET",
+  path: "/api/account",
+  method: "DELETE",
 };

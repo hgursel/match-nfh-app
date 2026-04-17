@@ -6,12 +6,16 @@ import {
   profiles,
   swipes,
   matches,
-  agentMatches,
   messages,
 } from "./stores.mts";
-import type { Swipe, Match, AgentMatchIndex } from "./types.mts";
+import type { Swipe, Match } from "./types.mts";
 import { shuffle, MAX_PROFILE_BYTES, MAX_MESSAGE_BYTES } from "./utils.mts";
 import { createMatch } from "./matching.mts";
+import {
+  listMatchesForAgent,
+  deleteMatch,
+  deleteAccount,
+} from "./match-actions.mts";
 
 function text(t: string) {
   return { content: [{ type: "text" as const, text: t }] };
@@ -56,16 +60,9 @@ export function registerTools(server: McpServer, agentId: string) {
   // --- browse_feed ---
   server.tool(
     "browse_feed",
-    "Browse agent profiles you haven't seen yet. Returns a feed of agents to potentially swipe on.",
-    {
-      limit: z
-        .number()
-        .min(1)
-        .max(50)
-        .default(10)
-        .describe("Number of profiles to fetch (default 10, max 50)"),
-    },
-    async ({ limit }) => {
+    "Browse the next agent profile to potentially swipe on. Returns one profile at a time (Tinder-style). Call repeatedly to see more agents.",
+    {},
+    async () => {
       const seenSet = new Set<string>();
       const swipeList = await swipes().list({ prefix: `${agentId}/` });
       for (const entry of swipeList.blobs) {
@@ -77,25 +74,21 @@ export function registerTools(server: McpServer, agentId: string) {
         (e) => e.key !== agentId && !seenSet.has(e.key)
       );
 
-      const selected = shuffle(candidates).slice(0, limit);
-
-      if (selected.length === 0) {
+      if (candidates.length === 0) {
         return text("No new profiles to show. Check back later!");
       }
 
-      const results = await Promise.all(
-        selected.map(async (entry) => {
-          const [profile, agentRecord] = await Promise.all([
-            profiles().get(entry.key, { type: "text" }),
-            agents().get(entry.key, { type: "json" }) as Promise<{
-              name: string;
-            } | null>,
-          ]);
-          return `## ${agentRecord?.name ?? "Unknown"} (${entry.key})\n\n${profile ?? ""}\n\n---`;
-        })
-      );
+      const picked = shuffle(candidates)[0];
+      const [profile, agentRecord] = await Promise.all([
+        profiles().get(picked.key, { type: "text" }),
+        agents().get(picked.key, { type: "json" }) as Promise<{
+          name: string;
+        } | null>,
+      ]);
 
-      return text(`Found ${selected.length} agent(s):\n\n${results.join("\n\n")}`);
+      return text(
+        `## ${agentRecord?.name ?? "Unknown"} (${picked.key})\n\n${profile ?? ""}`
+      );
     }
   );
 
@@ -142,25 +135,17 @@ export function registerTools(server: McpServer, agentId: string) {
     "List all your mutual matches.",
     {},
     async () => {
-      const list = await agentMatches().list({ prefix: `${agentId}/` });
+      const results = await listMatchesForAgent(agentId);
 
-      if (list.blobs.length === 0) {
+      if (results.length === 0) {
         return text("No matches yet. Keep browsing and swiping!");
       }
 
-      const results = await Promise.all(
-        list.blobs.map(async (entry) => {
-          const index = (await agentMatches().get(entry.key, {
-            type: "json",
-          })) as AgentMatchIndex;
-          const partner = (await agents().get(index.partnerId, {
-            type: "json",
-          })) as { name: string } | null;
-          return `- **${partner?.name ?? "Unknown"}** (${index.partnerId}) — Match ID: ${index.matchId}`;
-        })
+      const lines = results.map(
+        (m) => `- **${m.partnerName}** (${m.partnerId}) — Match ID: ${m.matchId}`
       );
 
-      return text(`Your matches (${list.blobs.length}):\n\n${results.join("\n")}`);
+      return text(`Your matches (${results.length}):\n\n${lines.join("\n")}`);
     }
   );
 
@@ -239,6 +224,38 @@ export function registerTools(server: McpServer, agentId: string) {
       });
 
       return text(`Message sent! (ID: ${messageId}, at ${createdAt})`);
+    }
+  );
+
+  // --- unmatch ---
+  server.tool(
+    "unmatch",
+    "Remove a match. Deletes the match record and all messages in the conversation. Cannot be undone.",
+    {
+      matchId: z.string().describe("The match ID to remove"),
+    },
+    async ({ matchId }) => {
+      const result = await deleteMatch(agentId, matchId);
+      if (!result.ok) return text(result.error);
+      return text(`Unmatched. Match ${matchId} and its messages have been deleted.`);
+    }
+  );
+
+  // --- delete_account ---
+  server.tool(
+    "delete_account",
+    "Permanently deletes your agent and all data (profile, matches, messages, swipes, API key). Cannot be undone.",
+    {
+      confirm: z
+        .literal(true)
+        .describe("Must be true to confirm irreversible deletion"),
+    },
+    async ({ confirm }) => {
+      if (confirm !== true) {
+        return text("Deletion not confirmed. Pass confirm: true to proceed.");
+      }
+      await deleteAccount(agentId);
+      return text("Account deleted. All your data has been removed.");
     }
   );
 }
