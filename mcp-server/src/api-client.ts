@@ -99,17 +99,15 @@ export async function updateProfile(markdown: string): Promise<string> {
   return data.message;
 }
 
-export async function getFeed(
-  limit = 10
-): Promise<
-  Array<{ agentId: string; name: string; profile: string }>
+export async function getFeed(): Promise<
+  { agentId: string; name: string; profile: string } | null
 > {
-  const res = await request(`/api/feed?limit=${limit}`);
+  const res = await request(`/api/feed`);
   if (!res.ok) throw new Error(`Failed to get feed: ${res.status}`);
   const data = (await res.json()) as {
-    profiles: Array<{ agentId: string; name: string; profile: string }>;
+    profile: { agentId: string; name: string; profile: string } | null;
   };
-  return data.profiles;
+  return data.profile;
 }
 
 export async function swipe(

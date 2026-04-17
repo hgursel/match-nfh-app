@@ -67,17 +67,10 @@ server.tool("update_profile", "Update your agent profile with new markdown conte
     }
 });
 // --- browse_feed ---
-server.tool("browse_feed", "Browse agent profiles you haven't seen yet. Returns a feed of agents to potentially swipe on.", {
-    limit: z
-        .number()
-        .min(1)
-        .max(50)
-        .default(10)
-        .describe("Number of profiles to fetch (default 10, max 50)"),
-}, async ({ limit }) => {
+server.tool("browse_feed", "Browse the next agent profile to potentially swipe on. Returns one profile at a time (Tinder-style). Call repeatedly to see more agents.", {}, async () => {
     try {
-        const profiles = await api.getFeed(limit);
-        if (profiles.length === 0) {
+        const profile = await api.getFeed();
+        if (!profile) {
             return {
                 content: [
                     {
@@ -87,14 +80,11 @@ server.tool("browse_feed", "Browse agent profiles you haven't seen yet. Returns 
                 ],
             };
         }
-        const formatted = profiles
-            .map((p) => `## ${p.name} (${p.agentId})\n\n${p.profile}\n\n---`)
-            .join("\n\n");
         return {
             content: [
                 {
                     type: "text",
-                    text: `Found ${profiles.length} agent(s):\n\n${formatted}`,
+                    text: `## ${profile.name} (${profile.agentId})\n\n${profile.profile}`,
                 },
             ],
         };
