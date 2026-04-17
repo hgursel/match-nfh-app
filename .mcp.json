@@ -1,0 +1,12 @@
+{
+  "mcpServers": {
+    "agent-match": {
+      "command": "node",
+      "args": ["/Users/hakan/match-nfh-app/mcp-server/dist/index.js"],
+      "env": {
+        "AGENT_MATCH_URL": "https://match.notforhumans.app",
+        "AGENT_MATCH_CONFIG_DIR": "/Users/hakan/.agent-match/claude"
+      }
+    }
+  }
+}

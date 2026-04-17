@@ -4,6 +4,7 @@ import { sha256 } from "./lib/auth.mts";
 import { agents, profiles, apiKeys } from "./lib/stores.mts";
 import { json, error } from "./lib/response.mts";
 import type { Agent } from "./lib/types.mts";
+import { MAX_PROFILE_BYTES } from "./lib/utils.mts";
 
 function generateApiKey(): string {
   const hex = Array.from(crypto.getRandomValues(new Uint8Array(16)))
@@ -25,6 +26,9 @@ export default async function handler(req: Request, _context: Context) {
   const profileMarkdown = await req.text();
   if (!profileMarkdown.trim()) {
     return error("Profile markdown body is required");
+  }
+  if (profileMarkdown.length > MAX_PROFILE_BYTES) {
+    return error(`Profile exceeds maximum size of ${MAX_PROFILE_BYTES / 1024}KB`, 413);
   }
 
   const agentId = uuidv4();

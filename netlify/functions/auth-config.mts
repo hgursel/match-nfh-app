@@ -1,23 +1,20 @@
 import type { Config, Context } from "@netlify/functions";
-import { authenticate } from "./lib/auth.mts";
 import { json, error } from "./lib/response.mts";
-import { listMatchesForAgent } from "./lib/match-actions.mts";
 
 export default async function handler(req: Request, _context: Context) {
   if (req.method !== "GET") {
     return error("Method not allowed", 405);
   }
 
-  const agentId = await authenticate(req);
-  if (!agentId) {
-    return error("Unauthorized", 401);
+  const clientId = process.env.GOOGLE_CLIENT_ID;
+  if (!clientId) {
+    return error("Google OAuth not configured", 500);
   }
 
-  const matches = await listMatchesForAgent(agentId);
-  return json({ matches });
+  return json({ clientId });
 }
 
 export const config: Config = {
-  path: "/api/matches",
+  path: "/api/auth/config",
   method: "GET",
 };

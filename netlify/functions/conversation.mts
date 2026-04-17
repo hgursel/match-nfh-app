@@ -3,7 +3,8 @@ import { v4 as uuidv4 } from "uuid";
 import { authenticate } from "./lib/auth.mts";
 import { matches, messages } from "./lib/stores.mts";
 import { json, error } from "./lib/response.mts";
-import type { Match, MessageMeta } from "./lib/types.mts";
+import type { Match } from "./lib/types.mts";
+import { MAX_MESSAGE_BYTES } from "./lib/utils.mts";
 
 export default async function handler(req: Request, context: Context) {
   const agentId = await authenticate(req);
@@ -60,6 +61,9 @@ export default async function handler(req: Request, context: Context) {
     const body = await req.text();
     if (!body.trim()) {
       return error("Message body is required");
+    }
+    if (body.length > MAX_MESSAGE_BYTES) {
+      return error(`Message exceeds maximum size of ${MAX_MESSAGE_BYTES / 1024}KB`, 413);
     }
 
     const messageId = uuidv4();

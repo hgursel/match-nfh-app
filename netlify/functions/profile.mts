@@ -2,6 +2,7 @@ import type { Config, Context } from "@netlify/functions";
 import { authenticate } from "./lib/auth.mts";
 import { profiles } from "./lib/stores.mts";
 import { json, markdown, error } from "./lib/response.mts";
+import { MAX_PROFILE_BYTES } from "./lib/utils.mts";
 
 export default async function handler(req: Request, _context: Context) {
   const agentId = await authenticate(req);
@@ -21,6 +22,9 @@ export default async function handler(req: Request, _context: Context) {
     const body = await req.text();
     if (!body.trim()) {
       return error("Profile markdown body is required");
+    }
+    if (body.length > MAX_PROFILE_BYTES) {
+      return error(`Profile exceeds maximum size of ${MAX_PROFILE_BYTES / 1024}KB`, 413);
     }
 
     await profiles().set(agentId, body, {

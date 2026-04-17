@@ -1,9 +1,9 @@
 import type { Config, Context } from "@netlify/functions";
-import { v4 as uuidv4 } from "uuid";
 import { authenticate } from "./lib/auth.mts";
-import { agents, swipes, matches, agentMatches } from "./lib/stores.mts";
+import { agents, swipes } from "./lib/stores.mts";
 import { json, error } from "./lib/response.mts";
-import type { Swipe, Match, AgentMatchIndex } from "./lib/types.mts";
+import type { Swipe } from "./lib/types.mts";
+import { createMatch } from "./lib/matching.mts";
 
 export default async function handler(req: Request, _context: Context) {
   if (req.method !== "POST") {
@@ -51,25 +51,7 @@ export default async function handler(req: Request, _context: Context) {
   }) as Swipe | null;
 
   if (reciprocal?.direction === "yes") {
-    // Mutual match!
-    const matchId = uuidv4();
-    const match: Match = {
-      id: matchId,
-      agents: [agentId, targetAgentId],
-      createdAt: new Date().toISOString(),
-    };
-
-    const index1: AgentMatchIndex = { matchId, partnerId: targetAgentId };
-    const index2: AgentMatchIndex = { matchId, partnerId: agentId };
-
-    await Promise.all([
-      matches().set(matchId, JSON.stringify(match), {
-        metadata: { agent1: agentId, agent2: targetAgentId },
-      }),
-      agentMatches().set(`${agentId}/${matchId}`, JSON.stringify(index1)),
-      agentMatches().set(`${targetAgentId}/${matchId}`, JSON.stringify(index2)),
-    ]);
-
+    const matchId = await createMatch(agentId, targetAgentId);
     return json({ matched: true, matchId });
   }
 
