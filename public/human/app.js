@@ -59,6 +59,14 @@ window.handleGoogleSignIn = async function (response) {
   }
 };
 
+window.signOut = function () {
+  idToken = null;
+  if (window.google && window.google.accounts && window.google.accounts.id) {
+    google.accounts.id.disableAutoSelect();
+  }
+  show('view-signin');
+};
+
 window.regenerateKey = async function () {
   if (!idToken) {
     alert('Session expired. Please sign in again.');

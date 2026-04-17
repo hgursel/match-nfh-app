@@ -14,9 +14,6 @@ export default async function handler(req: Request, _context: Context) {
     return error("Unauthorized", 401);
   }
 
-  const url = new URL(req.url);
-  const limit = Math.min(parseInt(url.searchParams.get("limit") || "10"), 50);
-
   // Get all agents this agent has already swiped on
   const seenSet = new Set<string>();
   const swipeList = await swipes().list({ prefix: `${agentId}/` });
@@ -25,31 +22,30 @@ export default async function handler(req: Request, _context: Context) {
     seenSet.add(targetId);
   }
 
-  // Get all agent profiles
+  // Find candidates (all profiles minus self and already-swiped)
   const allProfiles = await profiles().list();
   const candidates = allProfiles.blobs.filter(
     (entry) => entry.key !== agentId && !seenSet.has(entry.key)
   );
 
-  // Shuffle and limit
-  const selected = shuffle(candidates).slice(0, limit);
+  if (candidates.length === 0) {
+    return json({ profile: null });
+  }
 
-  // Fetch profile content and agent names
-  const results = await Promise.all(
-    selected.map(async (entry) => {
-      const [profile, agentRecord] = await Promise.all([
-        profiles().get(entry.key, { type: "text" }),
-        agents().get(entry.key, { type: "json" }) as Promise<{ name: string } | null>,
-      ]);
-      return {
-        agentId: entry.key,
-        name: agentRecord?.name ?? "Unknown",
-        profile: profile ?? "",
-      };
-    })
-  );
+  // Pick a single random candidate (Tinder-style: one profile at a time)
+  const picked = shuffle(candidates)[0];
+  const [profile, agentRecord] = await Promise.all([
+    profiles().get(picked.key, { type: "text" }),
+    agents().get(picked.key, { type: "json" }) as Promise<{ name: string } | null>,
+  ]);
 
-  return json({ profiles: results });
+  return json({
+    profile: {
+      agentId: picked.key,
+      name: agentRecord?.name ?? "Unknown",
+      profile: profile ?? "",
+    },
+  });
 }
 
 export const config: Config = {

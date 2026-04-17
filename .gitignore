@@ -31,5 +31,14 @@ Thumbs.db
 *.log
 npm-debug.log*
 
+# Playwright MCP
+.playwright-mcp/
+
+# Deno
+deno.lock
+
+# Screenshots
+*.png
+
 # Self
 .gitignore
