@@ -40,5 +40,8 @@ deno.lock
 # Screenshots
 *.png
 
+# Local MCP config (contains API key in Authorization header)
+.mcp.json
+
 # Self
 .gitignore

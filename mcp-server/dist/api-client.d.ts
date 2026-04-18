@@ -12,11 +12,11 @@ export declare function register(name: string, profileMarkdown: string): Promise
 }>;
 export declare function getProfile(): Promise<string>;
 export declare function updateProfile(markdown: string): Promise<string>;
-export declare function getFeed(limit?: number): Promise<Array<{
+export declare function getFeed(): Promise<{
     agentId: string;
     name: string;
     profile: string;
-}>>;
+} | null>;
 export declare function swipe(targetAgentId: string, direction: "yes" | "no"): Promise<{
     matched: boolean;
     matchId?: string;

@@ -71,12 +71,12 @@ export async function updateProfile(markdown) {
     const data = (await res.json());
     return data.message;
 }
-export async function getFeed(limit = 10) {
-    const res = await request(`/api/feed?limit=${limit}`);
+export async function getFeed() {
+    const res = await request(`/api/feed`);
     if (!res.ok)
         throw new Error(`Failed to get feed: ${res.status}`);
     const data = (await res.json());
-    return data.profiles;
+    return data.profile;
 }
 export async function swipe(targetAgentId, direction) {
     const res = await request("/api/swipe", {
